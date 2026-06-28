@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>SkyTalk</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<style>
+:root{
+--neon:#aa00ff;
+--neon-2:#7c3aed;
+--neon-3:#6366f1;
+--neon-soft:rgba(170,0,255,0.16);
+--neon-border:rgba(190,80,255,0.28);
+--bg-0:#060108;
+--bg-1:#0d0316;
+--bg-2:#160726;
+--surface:rgba(255,255,255,0.045);
+--surface-2:rgba(255,255,255,0.07);
+--text-0:#f3edfb;
+--text-1:#cdbfe8;
+--text-2:#8a7fa3;
+--danger:#ef4444;
+--ok:#22c55e;
+--gold:#facc15;
+--radius-sm:10px;
+--radius-md:14px;
+--radius-lg:20px;
+--radius-pill:999px;
+--shadow-neon:0 8px 30px rgba(170,0,255,0.28);
+--ease:cubic-bezier(.25,.8,.35,1);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+font-family:'Inter','Segoe UI',ui-monospace,'Courier New',monospace;
+background:var(--bg-0);
+background-image:
+radial-gradient(circle at 12% 8%, rgba(170,0,255,0.18) 0%, transparent 42%),
+radial-gradient(circle at 88% 92%, rgba(99,102,241,0.16) 0%, transparent 45%),
+radial-gradient(circle at 90% 10%, rgba(124,58,237,0.12) 0%, transparent 40%);
+color:var(--text-0);
+display:flex;justify-content:center;align-items:flex-start;
+height:100vh;height:100dvh;overflow:hidden;
+}
+#app{
+width:100%;max-width:480px;height:100vh;height:100dvh;
+background:linear-gradient(165deg,var(--bg-2),var(--bg-0) 65%);
+display:flex;flex-direction:column;overflow:hidden;position:relative;
+}
+@media (min-width:481px){
+#app{border-radius:24px;margin:14px 0;height:94vh;height:94dvh;box-shadow:var(--shadow-neon),0 0 0 1px var(--neon-border);}
+}
+@media (min-width:820px){
+#app{max-width:520px;}
+}
+.neon-text{color:var(--text-0);text-shadow:0 0 8px rgba(170,0,255,.85),0 0 22px rgba(124,58,237,.45);}
+.scroll-y{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.scroll-y::-webkit-scrollbar{width:3px;}
+.scroll-y::-webkit-scrollbar-thumb{background:var(--neon-border);border-radius:4px;}
+.screen{display:none;flex-direction:column;height:100%;width:100%;animation:fadeIn .32s var(--ease);}
+.screen.active{display:flex;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ---- Logo ---- */
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-logo{flex-shrink:0;filter:drop-shadow(0 0 10px rgba(170,0,255,.65));}
+.brand-word{font-size:19px;font-weight:800;letter-spacing:.5px;color:var(--text-0);}
+.brand-word b{color:var(--neon);}
+
+/* ---- Header ---- */
+.header{background:rgba(255,255,255,.035);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--neon-border);flex-shrink:0;gap:8px;}
+.header-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.btn-icon{background:var(--surface);border:1px solid var(--neon-border);color:var(--text-1);cursor:pointer;font-size:11px;padding:8px 12px;border-radius:var(--radius-sm);transition:all .18s var(--ease);font-weight:600;font-family:inherit;white-space:nowrap;}
+.btn-icon:hover{background:var(--neon-soft);border-color:var(--neon);color:#fff;}
+.btn-icon:active{transform:scale(.95);}
+.crown-btn{background:linear-gradient(135deg,var(--gold),#f59e0b);color:#1c0a2e;border:none;padding:8px 12px;border-radius:var(--radius-sm);font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(250,204,21,.3);transition:transform .15s;}
+.crown-btn:hover{transform:translateY(-1px);}
+
+.content{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch;}
+.content::-webkit-scrollbar{width:3px;}
+.content::-webkit-scrollbar-thumb{background:var(--neon-border);border-radius:4px;}
+
+.input-area{display:flex;gap:8px;padding:12px;background:rgba(255,255,255,.035);backdrop-filter:blur(18px);border-top:1px solid var(--neon-border);align-items:center;flex-shrink:0;padding-bottom:calc(12px + env(safe-area-inset-bottom));}
+.input-area input[type="text"]{flex:1;padding:12px 16px;border-radius:var(--radius-pill);border:1px solid var(--neon-border);background:var(--surface);color:#fff;font-size:13.5px;outline:none;font-family:inherit;min-width:0;transition:border .18s,box-shadow .18s;}
+.input-area input[type="text"]:focus{border-color:var(--neon);box-shadow:0 0 0 3px var(--neon-soft);}
+.input-area input[type="file"]{display:none;}
+.btn-attach,.btn-record,.btn-send-round{background:linear-gradient(135deg,var(--neon),var(--neon-3));color:#fff;border:none;cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:0 4px 16px rgba(170,0,255,.4);transition:transform .15s var(--ease);}
+.btn-attach:hover,.btn-record:hover,.btn-send-round:hover{transform:translateY(-2px) scale(1.04);}
+.btn-attach:active,.btn-record:active,.btn-send-round:active{transform:scale(.92);}
+.btn-record.recording{background:linear-gradient(135deg,var(--danger),#b91c1c);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55);}50%{box-shadow:0 0 0 13px rgba(239,68,68,0);}}
+
+.reply-bar{display:flex;align-items:center;gap:8px;padding:9px 14px;background:var(--neon-soft);border-top:1px solid var(--neon-border);font-size:12px;}
+.reply-bar .rtxt{flex:1;color:var(--text-1);border-left:3px solid var(--neon);padding-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pin-bar{display:flex;align-items:center;gap:8px;padding:9px 16px;background:rgba(250,204,21,.09);border-bottom:1px solid rgba(250,204,21,.25);font-size:11px;color:var(--gold);}
+
+.message-wrap{display:flex;flex-direction:column;max-width:78%;animation:msgIn .22s var(--ease);}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+.message-wrap.sent-wrap{align-self:flex-end;}
+.message-wrap.received-wrap{align-self:flex-start;}
+.sender-tag{font-size:10px;color:var(--neon);font-weight:700;margin:0 4px 3px;}
+.message{padding:10px 14px;border-radius:18px;font-size:13.5px;line-height:1.5;word-break:break-word;position:relative;cursor:pointer;transition:filter .15s;}
+.message:hover{filter:brightness(1.06);}
+.message.sent{background:linear-gradient(135deg,var(--neon),var(--neon-3));color:#fff;border-bottom-right-radius:6px;box-shadow:0 4px 14px rgba(170,0,255,.3);}
+.message.received{background:var(--surface-2);color:var(--text-0);border:1px solid var(--neon-border);border-bottom-left-radius:6px;}
+.message .quote{font-size:11px;opacity:.78;border-left:2px solid rgba(255,255,255,.55);padding-left:7px;margin-bottom:6px;}
+.message img{max-width:210px;border-radius:12px;cursor:pointer;display:block;}
+.message audio{max-width:195px;height:36px;}
+.message-time{font-size:9.5px;opacity:.7;margin-top:5px;text-align:right;display:flex;justify-content:flex-end;gap:3px;align-items:center;}
+.tick{font-size:11px;}
+.tick.read{color:#60a5fa;}
+.pinned-flag{font-size:9.5px;color:var(--gold);margin-bottom:3px;}
+
+.poll-box{background:var(--surface-2);border:1px solid var(--neon-border);border-radius:14px;padding:12px;min-width:205px;}
+.poll-q{font-weight:700;font-size:13px;margin-bottom:9px;}
+.poll-opt{display:flex;justify-content:space-between;align-items:center;padding:8px 11px;border-radius:9px;background:rgba(255,255,255,.05);margin-bottom:6px;cursor:pointer;font-size:12px;position:relative;overflow:hidden;transition:background .15s;}
+.poll-opt:hover{background:rgba(255,255,255,.09);}
+.poll-opt .fillbar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(170,0,255,.35),rgba(99,102,241,.3));z-index:0;transition:width .3s var(--ease);}
+.poll-opt span{position:relative;z-index:1;}
+
+.chat-item{display:flex;align-items:center;gap:12px;padding:11px;border-radius:var(--radius-md);cursor:pointer;transition:background .18s,transform .12s;border:1px solid transparent;}
+.chat-item:hover{background:var(--neon-soft);border-color:var(--neon-border);transform:translateX(2px);}
+.chat-item:active{transform:scale(.985);}
+.avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--neon),var(--neon-3));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;flex-shrink:0;overflow:hidden;box-shadow:0 0 0 2px var(--neon-border);}
+.avatar img{width:100%;height:100%;object-fit:cover;}
+.avatar.lg{width:84px;height:84px;font-size:30px;box-shadow:0 0 0 3px var(--neon-border),var(--shadow-neon);}
+.chat-info{flex:1;min-width:0;}
+.chat-name{font-weight:700;color:var(--text-0);font-size:14px;display:flex;align-items:center;}
+.chat-last{font-size:11.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+
+.search-bar{padding:10px 14px 6px;}
+.search-bar input{width:100%;padding:12px 16px;border-radius:var(--radius-pill);border:1px solid var(--neon-border);background:var(--surface);color:#fff;font-size:13.5px;outline:none;font-family:inherit;transition:border .18s,box-shadow .18s;}
+.search-bar input:focus{border-color:var(--neon);box-shadow:0 0 0 3px var(--neon-soft);}
+
+.form-container{display:flex;flex-direction:column;gap:16px;padding:36px 28px;flex:1;justify-content:center;overflow-y:auto;}
+.form-container input,.form-container textarea{padding:13px 16px;border-radius:var(--radius-sm);border:1px solid var(--neon-border);background:var(--surface);color:#fff;font-size:14px;outline:none;font-family:inherit;transition:border .18s,box-shadow .18s;}
+.form-container input:focus{border-color:var(--neon);box-shadow:0 0 0 3px var(--neon-soft);}
+.btn-primary{background:linear-gradient(135deg,var(--neon),var(--neon-3));color:#fff;border:none;padding:14px;border-radius:var(--radius-sm);cursor:pointer;font-weight:700;font-size:14px;font-family:inherit;box-shadow:0 8px 22px rgba(170,0,255,.35);letter-spacing:.3px;transition:transform .15s var(--ease),box-shadow .2s;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(170,0,255,.45);}
+.btn-primary:active{transform:scale(.98);}
+.btn-secondary{background:var(--surface);border:1px solid var(--neon-border);color:var(--text-1);padding:14px;border-radius:var(--radius-sm);cursor:pointer;font-weight:600;font-size:13px;font-family:inherit;transition:all .15s;}
+.btn-secondary:hover{background:var(--neon-soft);color:#fff;}
+.btn-danger{background:linear-gradient(135deg,var(--danger),#b91c1c);color:#fff;border:none;padding:11px 16px;border-radius:var(--radius-sm);cursor:pointer;font-weight:700;font-size:12.5px;font-family:inherit;}
+
+.auth-logo{text-align:center;margin-bottom:10px;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.auth-logo h1{font-size:28px;font-weight:900;letter-spacing:2px;background:linear-gradient(90deg,var(--neon),#c084fc,var(--neon-3));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 4s linear infinite;}
+@keyframes shine{to{background-position:200% center;}}
+.auth-logo p{color:var(--text-2);font-size:12px;letter-spacing:.5px;}
+.auth-tabs{display:flex;gap:8px;margin-bottom:2px;background:var(--surface);padding:4px;border-radius:var(--radius-sm);border:1px solid var(--neon-border);}
+.auth-tabs button{flex:1;padding:10px;border-radius:8px;border:none;background:transparent;color:var(--text-2);cursor:pointer;font-weight:700;font-size:12.5px;font-family:inherit;transition:all .2s;}
+.auth-tabs button.active{background:linear-gradient(135deg,var(--neon),var(--neon-3));color:#fff;box-shadow:0 4px 14px rgba(170,0,255,.35);}
+.link-small{text-align:center;color:var(--text-2);font-size:12px;cursor:pointer;margin-top:6px;}
+.link-small:hover{color:var(--neon);}
+
+.settings-card{padding:16px;background:var(--surface);border:1px solid var(--neon-border);border-radius:var(--radius-md);margin:8px 0;}
+.settings-card .id-display{font-size:22px;font-weight:800;letter-spacing:3px;color:var(--neon);}
+.settings-list-item{display:flex;align-items:center;gap:13px;padding:13px 14px;border-radius:var(--radius-md);cursor:pointer;transition:background .15s;}
+.settings-list-item:hover{background:var(--neon-soft);}
+
+.profile-header{display:flex;flex-direction:column;align-items:center;padding:26px 18px 14px;gap:9px;}
+.profile-header .name{font-size:18px;font-weight:800;color:var(--text-0);}
+.profile-header .bio{font-size:12.5px;color:var(--text-2);text-align:center;max-width:90%;}
+.profile-header .uid-tag{font-size:11px;color:var(--neon);font-weight:700;letter-spacing:1px;}
+.streak-pill{background:linear-gradient(135deg,#f97316,var(--gold));color:#1c0a2e;font-size:11.5px;font-weight:800;padding:5px 12px;border-radius:var(--radius-pill);margin-top:3px;box-shadow:0 4px 12px rgba(250,204,21,.25);}
+.premium-pill{background:linear-gradient(135deg,var(--gold),#f59e0b);color:#1c0a2e;font-size:10px;font-weight:800;padding:3px 9px;border-radius:var(--radius-pill);margin-left:6px;letter-spacing:.3px;}
+.stats-row{display:flex;gap:22px;margin-top:6px;}
+.stats-row .stat{text-align:center;cursor:pointer;transition:transform .15s;}
+.stats-row .stat:hover{transform:translateY(-2px);}
+.stats-row .stat b{display:block;font-size:16px;color:var(--text-0);}
+.stats-row .stat span{font-size:10.5px;color:var(--text-2);}
+
+.tab-bar{display:flex;border-top:1px solid var(--neon-border);background:rgba(255,255,255,.035);backdrop-filter:blur(18px);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);}
+.tab-bar button{flex:1;padding:12px 2px;background:none;border:none;color:var(--text-2);cursor:pointer;font-size:10.5px;font-weight:700;letter-spacing:.3px;font-family:inherit;transition:color .2s;}
+.tab-bar button.active-tab{color:var(--neon);border-top:2px solid var(--neon);}
+
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(5,1,8,.78);backdrop-filter:blur(8px);display:flex;justify-content:center;align-items:center;z-index:200;animation:fadeIn .18s var(--ease);padding:16px;}
+.modal-overlay.hidden{display:none;}
+.modal-box{background:linear-gradient(165deg,var(--bg-2),var(--bg-1));border:1px solid var(--neon-border);padding:22px;border-radius:var(--radius-lg);width:100%;max-width:390px;display:flex;flex-direction:column;gap:11px;box-shadow:0 24px 70px rgba(0,0,0,.55),var(--shadow-neon);max-height:88vh;overflow-y:auto;}
+.modal-box h3{color:var(--neon);font-size:15.5px;letter-spacing:.4px;font-weight:800;}
+.modal-box input,.modal-box textarea,.modal-box select{padding:11px 14px;border-radius:9px;border:1px solid var(--neon-border);background:var(--surface);color:#fff;outline:none;font-family:inherit;font-size:13.5px;}
+.modal-box input:focus,.modal-box textarea:focus{border-color:var(--neon);}
+
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(22,7,38,.96);border:1px solid var(--neon-border);color:#fff;padding:11px 20px;border-radius:var(--radius-pill);font-size:12.5px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;font-family:inherit;max-width:85%;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4);}
+.toast.show{opacity:1;}
+
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text-2);gap:7px;text-align:center;padding:26px;}
+.empty-state b{color:var(--text-1);font-size:13.5px;}
+.badge-blocked{background:linear-gradient(135deg,var(--danger),#b91c1c);color:#fff;font-size:9px;padding:2px 7px;border-radius:7px;font-weight:700;margin-left:5px;}
+.badge-admin{background:linear-gradient(135deg,var(--gold),#f59e0b);color:#1c0a2e;font-size:9px;padding:2px 7px;border-radius:7px;font-weight:700;margin-left:5px;}
+.badge-group{background:linear-gradient(135deg,#60a5fa,#3b82f6);color:#fff;font-size:9px;padding:2px 7px;border-radius:7px;font-weight:700;margin-left:5px;}
+.online-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:5px;box-shadow:0 0 6px var(--ok);}
+.spinner{width:28px;height:28px;border:3px solid var(--neon-border);border-top-color:var(--neon);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.back-btn{background:none;border:none;color:var(--neon);font-size:19px;cursor:pointer;padding:4px 8px;font-family:inherit;border-radius:8px;transition:background .15s;}
+.back-btn:hover{background:var(--neon-soft);}
+.admin-row{display:flex;align-items:center;gap:9px;padding:11px;border-radius:var(--radius-sm);background:var(--surface);margin-bottom:7px;border:1px solid var(--neon-border);flex-wrap:wrap;}
+.admin-row .meta{flex:1;min-width:120px;}
+.admin-row .meta .nm{font-weight:700;font-size:13px;}
+.admin-row .meta .sub{font-size:10.5px;color:var(--text-2);}
+.admin-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.mini-btn{font-size:10.5px;padding:6px 9px;border-radius:7px;border:1px solid var(--neon-border);background:var(--neon-soft);color:var(--text-1);cursor:pointer;font-weight:700;font-family:inherit;transition:all .15s;}
+.mini-btn:hover{background:var(--neon);color:#fff;}
+.mini-btn.danger{border-color:rgba(239,68,68,.45);color:#fca5a5;background:rgba(239,68,68,.12);}
+.mini-btn.danger:hover{background:var(--danger);color:#fff;}
+.mini-btn.ok{border-color:rgba(34,197,94,.45);color:#86efac;background:rgba(34,197,94,.12);}
+.mini-btn.ok:hover{background:var(--ok);color:#fff;}
+.mini-btn.gold{border-color:rgba(250,204,21,.5);color:#fde68a;background:rgba(250,204,21,.12);}
+.follow-btn{padding:7px 18px;border-radius:var(--radius-pill);border:none;font-weight:700;font-size:11.5px;cursor:pointer;font-family:inherit;transition:transform .15s;}
+.follow-btn:hover{transform:translateY(-1px);}
+.follow-btn.follow{background:linear-gradient(135deg,var(--neon),var(--neon-3));color:#fff;box-shadow:0 4px 14px rgba(170,0,255,.3);}
+.follow-btn.unfollow{background:var(--surface);color:var(--text-1);border:1px solid var(--neon-border);}
+hr.sep{border:none;border-top:1px solid var(--neon-border);margin:6px 0;}
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:var(--radius-sm);background:var(--surface);margin-bottom:6px;border:1px solid transparent;transition:border .15s;}
+.lb-row:hover{border-color:var(--neon-border);}
+.lb-rank{width:26px;text-align:center;font-weight:800;color:var(--gold);}
+.action-sheet{display:flex;flex-direction:column;gap:5px;}
+.action-sheet button{text-align:left;background:var(--surface);border:1px solid var(--neon-border);color:var(--text-0);padding:12px 15px;border-radius:var(--radius-sm);font-size:13.5px;font-family:inherit;cursor:pointer;transition:background .15s;}
+.action-sheet button:hover{background:var(--neon-soft);}
+.action-sheet button.danger{color:#fca5a5;}
+.captcha-box{display:flex;align-items:center;gap:10px;background:var(--neon-soft);border:1px dashed var(--neon-border);border-radius:var(--radius-sm);padding:11px;}
+.captcha-box .q{font-size:18px;font-weight:800;color:var(--neon);letter-spacing:1px;}
+.member-row{display:flex;align-items:center;gap:9px;padding:9px;border-radius:var(--radius-sm);background:var(--surface);margin-bottom:5px;}
+.member-row .meta{flex:1;font-size:12px;}
+.fav-star{font-size:15px;cursor:pointer;transition:transform .15s;}
+.fav-star:hover{transform:scale(1.2);}
+.icon-circle{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--neon-soft);border:1px solid var(--neon-border);font-size:15px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay hidden" id="modalOverlay"><div class="modal-box" id="modalBox"></div></div>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBJsf_lN3LHXTguUluQT-DA3TbWnStMwRI",
+  authDomain: "ness-2236c.firebaseapp.com",
+  projectId: "ness-2236c",
+  storageBucket: "ness-2236c.firebasestorage.app",
+  messagingSenderId: "139188874419",
+  appId: "1:139188874419:web:bf9150717ac9eee2d154c6",
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.firestore();
+const auth=firebase.auth();
+
+const ADMIN_USERNAME="RezzX";
+const ADMIN_DEFAULT_PASSWORD="123";
+
+let currentUser=null;
+let currentChatUser=null;
+let currentGroup=null;
+let currentScreen='chats';
+let mediaRecorder=null;
+let audioChunks=[];
+let isRecording=false;
+let unsubscribers=[];
+let messagesUnsub=null;
+let replyTarget=null;
+let activeMessages=[];
+let authReady=false;
+
+function LOGO(size){
+size=size||34;
+return `<svg width="${size}" height="${size}" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#c084fc"/><stop offset="50%" stop-color="#aa00ff"/><stop offset="100%" stop-color="#6366f1"/>
+</linearGradient></defs>
+<rect x="2" y="2" width="60" height="60" rx="18" fill="url(#lg1)"/>
+<path d="M20 40 C20 32, 26 26, 34 26 C41 26, 46 31, 46 37 C46 42, 42 45, 37 45 L24 45" stroke="white" stroke-width="4.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="22" cy="45" r="3.4" fill="white"/>
+</svg>`;
+}
+
+function showToast(msg){
+const t=document.getElementById('toast');
+t.textContent=msg;
+t.classList.add('show');
+clearTimeout(t._timer);
+t._timer=setTimeout(()=>t.classList.remove('show'),2800);
+}
+function openModal(html){
+document.getElementById('modalBox').innerHTML=html;
+document.getElementById('modalOverlay').classList.remove('hidden');
+}
+function closeModal(){
+document.getElementById('modalOverlay').classList.add('hidden');
+document.getElementById('modalBox').innerHTML='';
+}
+function generateUserId(){return String(Math.floor(100000+Math.random()*900000));}
+async function hashPassword(pw){
+const encoder=new TextEncoder();
+const data=encoder.encode(pw);
+const hashBuffer=await crypto.subtle.digest('SHA-256',data);
+const hashArray=Array.from(new Uint8Array(hashBuffer));
+return hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function getChatId(uid1,uid2){return uid1<uid2?uid1+'_'+uid2:uid2+'_'+uid1;}
+function escapeHtml(str){
+const d=document.createElement('div');
+d.textContent=str;
+return d.innerHTML;
+}
+function avatarHtml(user,size){
+const cls=size==='lg'?'avatar lg':'avatar';
+if(user&&user.photo)return `<div class="${cls}"><img src="${user.photo}"></div>`;
+const initial=user&&user.name?user.name.charAt(0).toUpperCase():'?';
+return `<div class="${cls}">${initial}</div>`;
+}
+function compressImage(file,maxSize,quality){
+return new Promise((resolve,reject)=>{
+const reader=new FileReader();
+reader.onload=(e)=>{
+const img=new Image();
+img.onload=()=>{
+let w=img.width,h=img.height;
+if(w>h){if(w>maxSize){h=Math.round(h*maxSize/w);w=maxSize;}}
+else{if(h>maxSize){w=Math.round(w*maxSize/h);h=maxSize;}}
+const canvas=document.createElement('canvas');
+canvas.width=w;canvas.height=h;
+canvas.getContext('2d').drawImage(img,0,0,w,h);
+resolve(canvas.toDataURL('image/jpeg',quality));
+};
+img.onerror=reject;
+img.src=e.target.result;
+};
+reader.onerror=reject;
+reader.readAsDataURL(file);
+});
+}
+function blobToBase64(blob){
+return new Promise((resolve,reject)=>{
+const reader=new FileReader();
+reader.onload=()=>resolve(reader.result);
+reader.onerror=reject;
+reader.readAsDataURL(blob);
+});
+}
+function unsubscribeMessages(){if(messagesUnsub){messagesUnsub();messagesUnsub=null;}}
+function unsubscribeAll(){unsubscribeMessages();unsubscribers.forEach(fn=>fn());unsubscribers=[];}
+
+function renderApp(){
+unsubscribeAll();
+const app=document.getElementById('app');
+if(!currentUser){renderAuthScreen(app);return;}
+renderMainScreen(app);
+}
+
+/* ===================== BOOTSTRAP: ANONYMOUS AUTH + ADMIN SEED ===================== */
+async function ensureAuthReady(){
+if(authReady)return;
+if(!auth.currentUser){
+await auth.signInAnonymously();
+}
+authReady=true;
+}
+async function ensureAdminAccountExists(){
+const snap=await db.collection('users').where('isAdminAccount','==',true).limit(1).get();
+if(!snap.empty)return;
+let userId=generateUserId();
+let idCheck=await db.collection('users').where('id','==',userId).limit(1).get();
+while(!idCheck.empty){userId=generateUserId();idCheck=await db.collection('users').where('id','==',userId).limit(1).get();}
+await db.collection('users').add({
+id:userId,name:ADMIN_USERNAME,bio:'👑 Pendiri & Admin SkyTalk',photo:null,
+password:await hashPassword(ADMIN_DEFAULT_PASSWORD),
+following:[],followers:[],favorites:[],blockedUsers:[],accountBlocked:false,online:false,
+isAdminAccount:true,streak:0,lastStreakDate:'',disappearTimer:0,authUid:auth.currentUser?auth.currentUser.uid:null,
+createdAt:firebase.firestore.FieldValue.serverTimestamp()
+});
+}
+
+/* ===================== AUTH SCREEN ===================== */
+function makeCaptcha(){
+const a=Math.floor(Math.random()*9)+1;
+const b=Math.floor(Math.random()*9)+1;
+return {a,b,answer:a+b};
+}
+function renderAuthScreen(app){
+app.innerHTML=`
+<div class="screen active" id="authScreen">
+<div class="form-container">
+<div class="auth-logo">${LOGO(54)}<h1 class="neon-text">SKYTALK</h1><p>Ngobrol tanpa batas, aman & elegan</p></div>
+<div class="auth-tabs"><button class="active" id="tabLogin">MASUK</button><button id="tabRegister">DAFTAR</button></div>
+<div id="authFields"></div>
+</div>
+</div>`;
+let mode='login';
+let captcha=makeCaptcha();
+function renderFields(){
+const wrap=document.getElementById('authFields');
+if(mode==='login'){
+wrap.innerHTML=`
+<input type="text" id="authName" placeholder="Username" autocomplete="off">
+<input type="password" id="authPassword" placeholder="Password">
+<button class="btn-primary" id="btnSubmit">MASUK</button>`;
+}else{
+captcha=makeCaptcha();
+wrap.innerHTML=`
+<input type="text" id="authName" placeholder="Username" autocomplete="off">
+<input type="text" id="authBio" placeholder="Bio singkat (opsional)" autocomplete="off">
+<input type="password" id="authPassword" placeholder="Password">
+<input type="password" id="authPassword2" placeholder="Ulangi Password">
+<div class="captcha-box"><span class="q">${captcha.a} + ${captcha.b} = ?</span><input type="text" id="captchaInput" placeholder="Jawaban" style="flex:1;"></div>
+<button class="btn-primary" id="btnSubmit">DAFTAR</button>`;
+}
+document.getElementById('btnSubmit').addEventListener('click',()=>{
+if(mode==='login')handleLogin();
+else handleRegister(captcha);
+});
+}
+renderFields();
+document.getElementById('tabLogin').addEventListener('click',()=>{mode='login';document.getElementById('tabLogin').classList.add('active');document.getElementById('tabRegister').classList.remove('active');renderFields();});
+document.getElementById('tabRegister').addEventListener('click',()=>{mode='register';document.getElementById('tabRegister').classList.add('active');document.getElementById('tabLogin').classList.remove('active');renderFields();});
+}
+
+async function handleLogin(){
+const name=document.getElementById('authName').value.trim();
+const password=document.getElementById('authPassword').value;
+if(!name||!password){showToast('Lengkapi semua field');return;}
+try{
+await ensureAuthReady();
+const snap=await db.collection('users').where('name','==',name).limit(1).get();
+if(snap.empty){showToast('Akun tidak ditemukan');return;}
+const doc=snap.docs[0];
+const data=doc.data();
+if(data.accountBlocked){showToast('Akun anda diblokir oleh admin');return;}
+const hashed=await hashPassword(password);
+if(data.password!==hashed){showToast('Password salah');return;}
+await doc.ref.update({authUid:auth.currentUser.uid});
+currentUser={...data,uid:doc.id,authUid:auth.currentUser.uid,_rawPassword:password,isAdmin:!!data.isAdminAccount};
+localStorage.setItem('skytalk_user',JSON.stringify({uid:doc.id,password:password}));
+renderApp();
+updateOnlineStatus(true);
+}catch(err){
+console.error(err);
+showToast('Gagal terhubung ke server, coba lagi');
+}
+}
+
+async function handleRegister(captcha){
+const name=document.getElementById('authName').value.trim();
+const bio=document.getElementById('authBio').value.trim();
+const password=document.getElementById('authPassword').value;
+const password2=document.getElementById('authPassword2').value;
+const captchaVal=parseInt(document.getElementById('captchaInput').value);
+if(captchaVal!==captcha.answer){showToast('Verifikasi salah, coba lagi');document.getElementById('tabRegister').click();return;}
+if(!name||!password){showToast('Lengkapi semua field');return;}
+if(name.length<3){showToast('Username minimal 3 karakter');return;}
+if(password.length<4){showToast('Password minimal 4 karakter');return;}
+if(password!==password2){showToast('Password tidak sama');return;}
+if(name.toLowerCase()===ADMIN_USERNAME.toLowerCase()){showToast('Username tidak tersedia');return;}
+try{
+await ensureAuthReady();
+const existing=await db.collection('users').where('name','==',name).limit(1).get();
+if(!existing.empty){showToast('Username sudah dipakai');return;}
+let userId=generateUserId();
+let idCheck=await db.collection('users').where('id','==',userId).limit(1).get();
+while(!idCheck.empty){userId=generateUserId();idCheck=await db.collection('users').where('id','==',userId).limit(1).get();}
+const hashed=await hashPassword(password);
+await db.collection('users').add({
+id:userId,name:name,bio:bio||'Hai, saya pengguna baru SkyTalk!',photo:null,password:hashed,
+following:[],followers:[],favorites:[],blockedUsers:[],accountBlocked:false,online:false,
+isAdminAccount:false,streak:0,lastStreakDate:'',disappearTimer:0,authUid:auth.currentUser.uid,
+createdAt:firebase.firestore.FieldValue.serverTimestamp()
+});
+showToast('Akun berhasil dibuat, silakan login');
+document.getElementById('tabLogin').click();
+document.getElementById('authName').value=name;
+}catch(err){
+console.error(err);
+showToast('Gagal mendaftar, coba lagi');
+}
+}
+
+function handleLogout(){
+updateOnlineStatus(false);
+localStorage.removeItem('skytalk_user');
+currentUser=null;currentChatUser=null;currentGroup=null;
+renderApp();
+}
+
+/* ===================== MAIN SHELL ===================== */
+function renderMainScreen(app){
+app.innerHTML=`
+<div class="screen active" id="mainScreen">
+<div class="header">
+<div class="brand">${LOGO(28)}<span class="brand-word">Sky<b>Talk</b></span></div>
+<div class="header-actions">
+${currentUser.isAdmin?'<button class="crown-btn" id="btnAdminPanel">👑 ADMIN</button>':''}
+<button class="btn-icon" id="btnLogout">Keluar</button>
+</div>
+</div>
+<div class="content" id="mainContent" style="padding:0;"></div>
+<div class="tab-bar">
+<button class="active-tab" data-tab="chats">CHATS</button>
+<button data-tab="groups">GRUP</button>
+<button data-tab="search">CARI</button>
+<button data-tab="profile">PROFIL</button>
+</div>
+</div>`;
+document.getElementById('btnLogout').addEventListener('click',handleLogout);
+if(currentUser.isAdmin)document.getElementById('btnAdminPanel').addEventListener('click',renderAdminPanel);
+document.querySelectorAll('.tab-bar button').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.tab)));
+switchTab('chats');
+}
+function switchTab(tab){
+currentScreen=tab;
+document.querySelectorAll('.tab-bar button').forEach(b=>b.classList.toggle('active-tab',b.dataset.tab===tab));
+if(tab==='chats')renderChatsTab();
+else if(tab==='groups')renderGroupsTab();
+else if(tab==='search')renderSearchTab();
+else if(tab==='profile')renderProfileTab(currentUser.uid);
+}
+
+/* ===================== CHATS LIST ===================== */
+function renderChatsTab(){
+const c=document.getElementById('mainContent');
+c.style.padding='14px';
+c.innerHTML=`<div id="chatsListWrap" style="display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:center;padding:28px;"><div class="spinner"></div></div></div>`;
+const unsub=db.collection('chats').where('participants','array-contains',currentUser.uid)
+.onSnapshot(async(snapshot)=>{
+if(currentScreen!=='chats')return;
+const wrap=document.getElementById('chatsListWrap');
+if(!wrap)return;
+if(snapshot.empty){wrap.innerHTML=`<div class="empty-state"><b>Belum ada percakapan</b><span>Cari pengguna di tab Cari</span></div>`;return;}
+const chats=[];
+snapshot.forEach(doc=>chats.push({id:doc.id,...doc.data()}));
+chats.sort((a,b)=>(b.updatedAt?b.updatedAt.toMillis():0)-(a.updatedAt?a.updatedAt.toMillis():0));
+const otherUids=chats.map(ch=>(ch.participants||[]).find(p=>p!==currentUser.uid)||null);
+const userDocs=await Promise.all(otherUids.map(uid=>uid?db.collection('users').doc(uid).get():Promise.resolve({exists:false,id:null,data:()=>({})})));
+let html='';
+chats.forEach((chat,i)=>{
+const otherSnap=userDocs[i];
+if(!otherSnap.exists)return;
+const other=otherSnap.data();
+const lastPrefix=chat.lastSender===currentUser.uid?'Anda: ':'';
+html+=`<div class="chat-item" data-uid="${otherSnap.id}">
+${avatarHtml(other)}
+<div class="chat-info">
+<div class="chat-name">${other.online?'<span class="online-dot"></span>':''}${other.name}${other.isAdminAccount?'<span class="badge-admin">ADMIN</span>':''}${other.accountBlocked?'<span class="badge-blocked">Blokir</span>':''}</div>
+<div class="chat-last">${lastPrefix}${chat.lastMessage||''}</div>
+</div></div>`;
+});
+wrap.innerHTML=html||`<div class="empty-state"><b>Belum ada percakapan</b></div>`;
+wrap.querySelectorAll('.chat-item').forEach(item=>item.addEventListener('click',()=>openChatWith(item.dataset.uid)));
+},err=>{console.error(err);showToast('Gagal memuat chat: izin ditolak');});
+unsubscribers.push(unsub);
+}
+
+/* ===================== GROUPS LIST ===================== */
+function renderGroupsTab(){
+const c=document.getElementById('mainContent');
+c.style.padding='14px';
+c.innerHTML=`<button class="btn-primary" id="btnCreateGroup" style="margin-bottom:10px;">+ BUAT GRUP BARU</button><div id="groupsListWrap" style="display:flex;flex-direction:column;gap:6px;"></div>`;
+document.getElementById('btnCreateGroup').addEventListener('click',openCreateGroupModal);
+const unsub=db.collection('groups').where('members','array-contains',currentUser.uid)
+.onSnapshot((snapshot)=>{
+if(currentScreen!=='groups')return;
+const wrap=document.getElementById('groupsListWrap');
+if(!wrap)return;
+if(snapshot.empty){wrap.innerHTML=`<div class="empty-state"><b>Belum ada grup</b><span>Buat grup baru untuk mulai</span></div>`;return;}
+const groups=[];
+snapshot.forEach(doc=>groups.push({id:doc.id,...doc.data()}));
+groups.sort((a,b)=>(b.updatedAt?b.updatedAt.toMillis():0)-(a.updatedAt?a.updatedAt.toMillis():0));
+let html='';
+groups.forEach(g=>{
+html+=`<div class="chat-item" data-gid="${g.id}">
+${avatarHtml(g)}
+<div class="chat-info"><div class="chat-name">${g.name}<span class="badge-group">GRUP</span></div>
+<div class="chat-last">${g.lastMessage||(g.members.length+' anggota')}</div></div></div>`;
+});
+wrap.innerHTML=html;
+wrap.querySelectorAll('.chat-item').forEach(item=>item.addEventListener('click',()=>openGroup(item.dataset.gid)));
+},err=>{console.error(err);showToast('Gagal memuat grup: izin ditolak');});
+unsubscribers.push(unsub);
+}
+
+async function openCreateGroupModal(){
+const followSnap=await db.collection('users').doc(currentUser.uid).get();
+const data=followSnap.data();
+const candidateUids=Array.from(new Set([...(data.following||[]),...(data.followers||[])]));
+const docs=await Promise.all(candidateUids.map(u=>db.collection('users').doc(u).get()));
+let memberHtml='';
+docs.forEach(d=>{
+if(!d.exists)return;
+const u=d.data();
+memberHtml+=`<label class="member-row"><input type="checkbox" class="gmCheck" value="${d.id}"> ${avatarHtml(u)} <span class="meta">${u.name}</span></label>`;
+});
+openModal(`
+<h3>Buat Grup</h3>
+<input type="text" id="grpName" placeholder="Nama Grup">
+<p style="font-size:11.5px;color:var(--text-2);">Pilih anggota (dari mengikuti/pengikut anda):</p>
+<div style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">${memberHtml||'<p style="font-size:12px;color:var(--text-2);">Belum ada following/followers untuk ditambahkan</p>'}</div>
+<button class="btn-primary" id="btnSaveGroup">BUAT GRUP</button>
+<button class="btn-secondary" id="btnCancelGroup">Batal</button>`);
+document.getElementById('btnCancelGroup').addEventListener('click',closeModal);
+document.getElementById('btnSaveGroup').addEventListener('click',async()=>{
+const name=document.getElementById('grpName').value.trim();
+if(!name){showToast('Nama grup wajib diisi');return;}
+const selected=Array.from(document.querySelectorAll('.gmCheck:checked')).map(c=>c.value);
+const members=Array.from(new Set([currentUser.uid,...selected]));
+const ref=await db.collection('groups').add({
+name:name,photo:null,owner:currentUser.uid,admins:[currentUser.uid],members:members,
+onlyAdminSend:false,streak:0,lastStreakDate:'',
+createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+});
+closeModal();
+showToast('Grup berhasil dibuat');
+openGroup(ref.id);
+});
+}
+
+/* ===================== SEARCH ===================== */
+function renderSearchTab(){
+const c=document.getElementById('mainContent');
+c.style.padding='0';
+c.innerHTML=`
+<div class="search-bar"><input type="text" id="userSearchInput" placeholder="Cari ID atau username..."></div>
+<div id="searchResults" style="padding:8px 14px;display:flex;flex-direction:column;gap:6px;"><div class="empty-state"><b>Cari pengguna</b><span>Ketik ID atau username</span></div></div>`;
+let timeout=null;
+document.getElementById('userSearchInput').addEventListener('input',(e)=>{
+clearTimeout(timeout);
+const val=e.target.value.trim();
+timeout=setTimeout(()=>performSearch(val),300);
+});
+}
+async function performSearch(val){
+const results=document.getElementById('searchResults');
+if(!results)return;
+if(!val){results.innerHTML=`<div class="empty-state"><b>Cari pengguna</b><span>Ketik ID atau username</span></div>`;return;}
+results.innerHTML=`<div style="display:flex;justify-content:center;padding:18px;"><div class="spinner"></div></div>`;
+try{
+const byId=await db.collection('users').where('id','==',val).limit(5).get();
+const byName=await db.collection('users').where('name','>=',val).where('name','<=',val+'\uf8ff').limit(15).get();
+const map=new Map();
+// Key = Firestore doc ID; store _docId separately for unambiguous doc references
+byId.forEach(doc=>map.set(doc.id,{_docId:doc.id,...doc.data()}));
+byName.forEach(doc=>map.set(doc.id,{_docId:doc.id,...doc.data()}));
+map.delete(currentUser.uid);
+if(map.size===0){results.innerHTML=`<div class="empty-state"><b>Tidak ditemukan</b></div>`;return;}
+let html='';
+map.forEach((u)=>{
+// data-uid always holds the Firestore document ID (_docId)
+html+=`<div class="chat-item" data-uid="${u._docId}">${avatarHtml(u)}
+<div class="chat-info"><div class="chat-name">${u.name}${u.isAdminAccount?'<span class="badge-admin">ADMIN</span>':''}${u.accountBlocked?'<span class="badge-blocked">Blokir</span>':''}</div>
+<div class="chat-last">ID: ${u.id}</div></div></div>`;
+});
+results.innerHTML=html;
+results.querySelectorAll('.chat-item').forEach(item=>item.addEventListener('click',()=>renderProfileTab(item.dataset.uid,true)));
+}catch(err){
+console.error(err);
+results.innerHTML=`<div class="empty-state"><b>Gagal mencari</b><span>Periksa koneksi atau coba lagi</span></div>`;
+}
+}
+
+/* ===================== PROFILE ===================== */
+async function renderProfileTab(uid,fromSearch){
+const c=document.getElementById('mainContent');
+c.style.padding='0';
+c.innerHTML=`<div style="display:flex;justify-content:center;padding:38px;"><div class="spinner"></div></div>`;
+try{
+const snap=await db.collection('users').doc(uid).get();
+if(!snap.exists){c.innerHTML=`<div class="empty-state"><b>Pengguna tidak ditemukan</b></div>`;return;}
+const data=snap.data();
+const isSelf=uid===currentUser.uid;
+const isFollowing=(data.followers||[]).includes(currentUser.uid);
+const isFav=(currentUser.favorites||[]).includes(uid);
+const isBlockedByMeFlag=(currentUser.blockedUsers||[]).includes(uid);
+c.innerHTML=`
+${fromSearch?'<div style="padding:10px 14px 0;"><button class="back-btn" id="backToSearch">&larr; Kembali</button></div>':''}
+<div class="profile-header">
+${avatarHtml(data,'lg')}
+<div class="name">${data.name}${data.isAdminAccount?'<span class="premium-pill">👑 PREMIUM</span>':''}${data.accountBlocked?'<span class="badge-blocked">Blokir</span>':''}</div>
+<div class="uid-tag">ID: ${data.id}</div>
+<div class="bio">${data.bio||''}</div>
+<div class="streak-pill">🔥 ${data.streak||0} hari streak</div>
+<div class="stats-row">
+<div class="stat" id="statFollowing"><b>${(data.following||[]).length}</b><span>Mengikuti</span></div>
+<div class="stat" id="statFollowers"><b>${(data.followers||[]).length}</b><span>Pengikut</span></div>
+</div>
+${isSelf?`<button class="btn-icon" id="btnOpenSettings" style="margin-top:8px;">Edit Profil</button>
+<button class="btn-icon" id="btnLeaderboard" style="margin-top:8px;">🏆 Papan Peringkat Streak</button>`:
+`<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;align-items:center;">
+<button class="follow-btn ${isFollowing?'unfollow':'follow'}" id="btnFollowToggle">${isFollowing?'Mengikuti':'Ikuti'}</button>
+<button class="btn-icon" id="btnGoChat">Kirim Pesan</button>
+<span class="fav-star" id="btnFav">${isFav?'⭐':'☆'}</span>
+<button class="btn-icon" id="btnBlockUser">${isBlockedByMeFlag?'Buka Blokir':'Blokir'}</button>
+</div>`}
+</div>
+${isSelf?'<div class="content" id="settingsArea" style="padding-top:0;"></div>':''}
+`;
+if(fromSearch)document.getElementById('backToSearch').addEventListener('click',renderSearchTab);
+if(isSelf){
+renderSettingsArea();
+document.getElementById('btnOpenSettings').addEventListener('click',()=>document.getElementById('settingsArea').scrollIntoView({behavior:'smooth'}));
+document.getElementById('btnLeaderboard').addEventListener('click',renderLeaderboardModal);
+}else{
+document.getElementById('statFollowers').addEventListener('click',()=>showFollowListModal(uid,'followers'));
+document.getElementById('statFollowing').addEventListener('click',()=>showFollowListModal(uid,'following'));
+document.getElementById('btnFollowToggle').addEventListener('click',()=>toggleFollow(uid,isFollowing));
+document.getElementById('btnGoChat').addEventListener('click',()=>openChatWith(uid));
+document.getElementById('btnFav').addEventListener('click',()=>toggleFavorite(uid,isFav));
+document.getElementById('btnBlockUser').addEventListener('click',()=>toggleBlockUser(uid,isBlockedByMeFlag));
+}
+}catch(err){
+console.error(err);
+c.innerHTML=`<div class="empty-state"><b>Gagal memuat profil</b><span>Coba lagi</span></div>`;
+}
+}
+
+async function toggleFavorite(uid,isFav){
+const ref=db.collection('users').doc(currentUser.uid);
+if(isFav){
+await ref.update({favorites:firebase.firestore.FieldValue.arrayRemove(uid)});
+currentUser.favorites=(currentUser.favorites||[]).filter(x=>x!==uid);
+showToast('Dihapus dari favorit');
+}else{
+await ref.update({favorites:firebase.firestore.FieldValue.arrayUnion(uid)});
+currentUser.favorites=[...(currentUser.favorites||[]),uid];
+showToast('Ditambahkan ke favorit');
+}
+renderProfileTab(uid,true);
+}
+async function toggleBlockUser(uid,isBlocked){
+const ref=db.collection('users').doc(currentUser.uid);
+if(isBlocked){
+await ref.update({blockedUsers:firebase.firestore.FieldValue.arrayRemove(uid)});
+currentUser.blockedUsers=(currentUser.blockedUsers||[]).filter(x=>x!==uid);
+showToast('Blokir dibuka');
+}else{
+await ref.update({blockedUsers:firebase.firestore.FieldValue.arrayUnion(uid)});
+currentUser.blockedUsers=[...(currentUser.blockedUsers||[]),uid];
+showToast('Pengguna diblokir');
+}
+renderProfileTab(uid,true);
+}
+async function toggleFollow(targetUid,isFollowing){
+const myRef=db.collection('users').doc(currentUser.uid);
+const targetRef=db.collection('users').doc(targetUid);
+if(isFollowing){
+await myRef.update({following:firebase.firestore.FieldValue.arrayRemove(targetUid)});
+await targetRef.update({followers:firebase.firestore.FieldValue.arrayRemove(currentUser.uid)});
+showToast('Berhenti mengikuti');
+}else{
+await myRef.update({following:firebase.firestore.FieldValue.arrayUnion(targetUid)});
+await targetRef.update({followers:firebase.firestore.FieldValue.arrayUnion(currentUser.uid)});
+showToast('Mulai mengikuti');
+}
+renderProfileTab(targetUid,true);
+}
+async function showFollowListModal(uid,type){
+const snap=await db.collection('users').doc(uid).get();
+const data=snap.data();
+const list=data[type]||[];
+if(list.length===0){
+openModal(`<h3>${type==='followers'?'Pengikut':(type==='following'?'Mengikuti':'Favorit')}</h3><p style="color:var(--text-2);font-size:12px;">Belum ada data</p><button class="btn-secondary" id="btnCloseFollowModal">Tutup</button>`);
+document.getElementById('btnCloseFollowModal').addEventListener('click',closeModal);
+return;
+}
+const docs=await Promise.all(list.map(u=>db.collection('users').doc(u).get()));
+let html=`<h3>${type==='followers'?'Pengikut':(type==='following'?'Mengikuti':'Favorit')}</h3><div style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;">`;
+docs.forEach(d=>{
+if(!d.exists)return;
+const u=d.data();
+html+=`<div class="chat-item" data-uid="${d.id}">${avatarHtml(u)}<div class="chat-info"><div class="chat-name">${u.name}</div><div class="chat-last">ID: ${u.id}</div></div></div>`;
+});
+html+=`</div><button class="btn-secondary" id="btnCloseFollowModal2">Tutup</button>`;
+openModal(html);
+document.getElementById('btnCloseFollowModal2').addEventListener('click',closeModal);
+document.querySelectorAll('#modalBox .chat-item').forEach(item=>item.addEventListener('click',()=>{closeModal();renderProfileTab(item.dataset.uid,true);}));
+}
+async function renderLeaderboardModal(){
+openModal(`<h3>Papan Peringkat Streak</h3><div id="lbWrap" style="display:flex;justify-content:center;padding:18px;"><div class="spinner"></div></div><button class="btn-secondary" id="btnCloseLb">Tutup</button>`);
+document.getElementById('btnCloseLb').addEventListener('click',closeModal);
+const snap=await db.collection('users').orderBy('streak','desc').limit(20).get();
+const wrap=document.getElementById('lbWrap');
+if(!wrap)return;
+let html='';
+let rank=1;
+snap.forEach(doc=>{
+const u=doc.data();
+html+=`<div class="lb-row"><span class="lb-rank">#${rank}</span>${avatarHtml(u)}<div class="meta" style="flex:1;font-size:12px;">${u.name}</div><div class="streak-pill" style="margin:0;">🔥 ${u.streak||0}</div></div>`;
+rank++;
+});
+wrap.outerHTML=`<div style="display:flex;flex-direction:column;gap:0;max-height:340px;overflow-y:auto;">${html||'<p style="font-size:12px;color:var(--text-2);">Belum ada data</p>'}</div>`;
+}
+
+function renderSettingsArea(){
+const area=document.getElementById('settingsArea');
+if(!area)return;
+const timerLabel={0:'Nonaktif',86400:'24 Jam',604800:'7 Hari',90:'90 Detik'}[currentUser.disappearTimer||0]||'Nonaktif';
+area.innerHTML=`
+<div class="settings-list-item" id="optEditName"><div class="icon-circle">✎</div><div><b>Ubah Nama</b><div style="font-size:11px;color:var(--text-2);">${currentUser.name}</div></div></div>
+<div class="settings-list-item" id="optEditBio"><div class="icon-circle">✦</div><div><b>Ubah Bio</b><div style="font-size:11px;color:var(--text-2);">${currentUser.bio||'-'}</div></div></div>
+<div class="settings-list-item" id="optEditPhoto"><div class="icon-circle">◐</div><div><b>Ubah Foto Profil</b><div style="font-size:11px;color:var(--text-2);">Pilih gambar baru</div></div></div>
+<div class="settings-list-item" id="optEditPassword"><div class="icon-circle">⚿</div><div><b>Ubah Password</b><div style="font-size:11px;color:var(--text-2);">Perbarui kata sandi</div></div></div>
+<div class="settings-list-item" id="optTimer"><div class="icon-circle">⏱</div><div><b>Timer Pesan Sekali Lihat</b><div style="font-size:11px;color:var(--text-2);">${timerLabel}</div></div></div>
+<div class="settings-list-item" id="optFavList"><div class="icon-circle">⭐</div><div><b>Teman Favorit</b><div style="font-size:11px;color:var(--text-2);">${(currentUser.favorites||[]).length} teman</div></div></div>
+<hr class="sep">
+<div class="settings-card"><div class="id-display">${currentUser.id}</div><div style="font-size:11px;color:var(--text-2);margin-top:4px;">ID Pengguna (tidak dapat diubah)</div></div>
+<input type="file" id="photoInputHidden" accept="image/*" style="display:none;">`;
+document.getElementById('optEditName').addEventListener('click',openEditNameModal);
+document.getElementById('optEditBio').addEventListener('click',openEditBioModal);
+document.getElementById('optEditPhoto').addEventListener('click',()=>document.getElementById('photoInputHidden').click());
+document.getElementById('optEditPassword').addEventListener('click',openEditPasswordModal);
+document.getElementById('optTimer').addEventListener('click',openTimerModal);
+document.getElementById('optFavList').addEventListener('click',()=>showFollowListModal(currentUser.uid,'favorites'));
+document.getElementById('photoInputHidden').addEventListener('change',handleProfilePhotoChange);
+}
+function openTimerModal(){
+openModal(`
+<h3>Timer Pesan Sekali Lihat</h3>
+<p style="font-size:11.5px;color:var(--text-2);">Pesan baru di chat pribadi anda otomatis terhapus setelah durasi ini.</p>
+<select id="timerSelect">
+<option value="0" ${(!currentUser.disappearTimer)?'selected':''}>Nonaktif</option>
+<option value="90" ${currentUser.disappearTimer==90?'selected':''}>90 Detik</option>
+<option value="86400" ${currentUser.disappearTimer==86400?'selected':''}>24 Jam</option>
+<option value="604800" ${currentUser.disappearTimer==604800?'selected':''}>7 Hari</option>
+</select>
+<button class="btn-primary" id="btnSaveTimer">Simpan</button>
+<button class="btn-secondary" id="btnCancelTimer">Batal</button>`);
+document.getElementById('btnCancelTimer').addEventListener('click',closeModal);
+document.getElementById('btnSaveTimer').addEventListener('click',async()=>{
+const val=parseInt(document.getElementById('timerSelect').value);
+await db.collection('users').doc(currentUser.uid).update({disappearTimer:val});
+currentUser.disappearTimer=val;
+closeModal();
+showToast('Timer pesan diperbarui');
+renderProfileTab(currentUser.uid);
+});
+}
+function openEditNameModal(){
+openModal(`<h3>Ubah Nama</h3><input type="text" id="newNameInput" value="${currentUser.name}"><button class="btn-primary" id="btnSaveName">Simpan</button><button class="btn-secondary" id="btnCancelModal">Batal</button>`);
+document.getElementById('btnCancelModal').addEventListener('click',closeModal);
+document.getElementById('btnSaveName').addEventListener('click',async()=>{
+const newName=document.getElementById('newNameInput').value.trim();
+if(!newName||newName.length<3){showToast('Nama minimal 3 karakter');return;}
+const existing=await db.collection('users').where('name','==',newName).limit(1).get();
+if(!existing.empty&&existing.docs[0].id!==currentUser.uid){showToast('Username sudah dipakai');return;}
+await db.collection('users').doc(currentUser.uid).update({name:newName});
+currentUser.name=newName;
+closeModal();showToast('Nama berhasil diubah');renderProfileTab(currentUser.uid);
+});
+}
+function openEditBioModal(){
+openModal(`<h3>Ubah Bio</h3><textarea id="newBioInput" rows="3" maxlength="120">${currentUser.bio||''}</textarea><button class="btn-primary" id="btnSaveBio">Simpan</button><button class="btn-secondary" id="btnCancelModal2">Batal</button>`);
+document.getElementById('btnCancelModal2').addEventListener('click',closeModal);
+document.getElementById('btnSaveBio').addEventListener('click',async()=>{
+const newBio=document.getElementById('newBioInput').value.trim();
+await db.collection('users').doc(currentUser.uid).update({bio:newBio});
+currentUser.bio=newBio;
+closeModal();showToast('Bio berhasil diubah');renderProfileTab(currentUser.uid);
+});
+}
+function openEditPasswordModal(){
+openModal(`<h3>Ubah Password</h3><input type="password" id="oldPwInput" placeholder="Password lama"><input type="password" id="newPwInput" placeholder="Password baru"><input type="password" id="newPwInput2" placeholder="Ulangi password baru"><button class="btn-primary" id="btnSavePw">Simpan</button><button class="btn-secondary" id="btnCancelModal3">Batal</button>`);
+document.getElementById('btnCancelModal3').addEventListener('click',closeModal);
+document.getElementById('btnSavePw').addEventListener('click',async()=>{
+const oldPw=document.getElementById('oldPwInput').value;
+const newPw=document.getElementById('newPwInput').value;
+const newPw2=document.getElementById('newPwInput2').value;
+const oldHashed=await hashPassword(oldPw);
+if(oldHashed!==currentUser.password){showToast('Password lama salah');return;}
+if(newPw.length<4){showToast('Password baru minimal 4 karakter');return;}
+if(newPw!==newPw2){showToast('Password baru tidak sama');return;}
+const newHashed=await hashPassword(newPw);
+await db.collection('users').doc(currentUser.uid).update({password:newHashed});
+currentUser.password=newHashed;currentUser._rawPassword=newPw;
+localStorage.setItem('skytalk_user',JSON.stringify({uid:currentUser.uid,password:newPw}));
+closeModal();showToast('Password berhasil diubah');
+});
+}
+async function handleProfilePhotoChange(e){
+const file=e.target.files[0];
+if(!file)return;
+if(!file.type.startsWith('image/')){showToast('File harus berupa gambar');return;}
+showToast('Mengunggah foto...');
+try{
+const base64=await compressImage(file,360,0.7);
+await db.collection('users').doc(currentUser.uid).update({photo:base64});
+currentUser.photo=base64;
+showToast('Foto profil berhasil diubah');
+renderProfileTab(currentUser.uid);
+}catch(err){showToast('Gagal memproses gambar');}
+e.target.value='';
+}
+
+/* ===================== 1-1 CHAT ===================== */
+async function openChatWith(uid){
+const snap=await db.collection('users').doc(uid).get();
+if(!snap.exists)return;
+if((currentUser.blockedUsers||[]).includes(uid)){showToast('Anda telah memblokir pengguna ini, buka blokir untuk chat');return;}
+currentChatUser={uid:snap.id,...snap.data()};
+currentGroup=null;
+replyTarget=null;
+renderChatScreen();
+}
+function renderChatScreen(){
+const app=document.getElementById('app');
+app.innerHTML=`
+<div class="screen active" id="chatScreen">
+<div class="header">
+<button class="back-btn" id="btnBackChat">&larr;</button>
+${avatarHtml(currentChatUser)}
+<div style="flex:1;margin-left:8px;min-width:0;">
+<div style="font-weight:700;font-size:13.5px;">${currentChatUser.name}${currentChatUser.isAdminAccount?'<span class="premium-pill">👑</span>':''}</div>
+<div style="font-size:10px;color:var(--text-2);">${currentChatUser.online?'Online':'Offline'}</div>
+</div>
+<button class="btn-icon" id="btnChatMenu">⋮</button>
+</div>
+<div id="pinBarWrap"></div>
+<div class="content" id="messagesContainer"></div>
+<div id="replyBarWrap"></div>
+<div class="input-area">
+<button class="btn-attach" id="btnAttach">📎</button>
+<input type="file" id="fileInput" accept="image/*">
+<input type="text" id="messageInput" placeholder="Tulis pesan...">
+<button class="btn-record" id="btnRecord">🎤</button>
+<button class="btn-send-round" id="btnSend">➤</button>
+</div>
+</div>`;
+document.getElementById('btnBackChat').addEventListener('click',()=>{currentChatUser=null;renderApp();});
+document.getElementById('btnAttach').addEventListener('click',openAttachMenu);
+document.getElementById('fileInput').addEventListener('change',handleImageUpload);
+document.getElementById('btnSend').addEventListener('click',sendTextMessage);
+document.getElementById('messageInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')sendTextMessage();});
+document.getElementById('btnRecord').addEventListener('click',toggleRecording);
+document.getElementById('btnChatMenu').addEventListener('click',openChatMenuSheet);
+listenToMessages();
+}
+function openChatMenuSheet(){
+openModal(`<div class="action-sheet">
+<button id="actViewProfile">Lihat Profil</button>
+<button id="actPollCreate">Buat Polling</button>
+<button id="actCloseSheet">Tutup</button>
+</div>`);
+document.getElementById('actViewProfile').addEventListener('click',()=>{closeModal();currentChatUser&&renderProfileFromChat();});
+document.getElementById('actPollCreate').addEventListener('click',()=>{closeModal();openCreatePollModal();});
+document.getElementById('actCloseSheet').addEventListener('click',closeModal);
+}
+function renderProfileFromChat(){
+const uid=currentChatUser.uid;
+currentChatUser=null;
+renderMainScreen(document.getElementById('app'));
+switchTab('search');
+renderProfileTab(uid,true);
+}
+function openAttachMenu(){
+openModal(`<div class="action-sheet">
+<button id="actImage">📷 Kirim Gambar</button>
+<button id="actPoll">📊 Buat Polling</button>
+<button id="actCloseAttach">Batal</button>
+</div>`);
+document.getElementById('actImage').addEventListener('click',()=>{closeModal();document.getElementById('fileInput').click();});
+document.getElementById('actPoll').addEventListener('click',()=>{closeModal();openCreatePollModal();});
+document.getElementById('actCloseAttach').addEventListener('click',closeModal);
+}
+function chatContextRef(){
+if(currentGroup)return db.collection('groups').doc(currentGroup.id);
+return db.collection('chats').doc(getChatId(currentUser.uid,currentChatUser.uid));
+}
+function listenToMessages(){
+unsubscribeMessages();
+const ref=chatContextRef();
+const container=document.getElementById('messagesContainer');
+messagesUnsub=ref.collection('messages').orderBy('timestamp','asc').limit(300)
+.onSnapshot((snapshot)=>{
+if(!container)return;
+activeMessages=[];
+snapshot.forEach(doc=>activeMessages.push({id:doc.id,...doc.data()}));
+const now=Date.now();
+activeMessages=activeMessages.filter(m=>!(m.expireAt&&m.expireAt<now)&&!(m.deletedFor&&m.deletedFor.includes(currentUser.uid)));
+renderPinBar();
+container.innerHTML='';
+activeMessages.forEach(msg=>renderMessage(msg,container));
+container.scrollTop=container.scrollHeight;
+markMessagesRead(snapshot);
+},err=>{console.error(err);showToast('Gagal memuat pesan: izin ditolak');});
+}
+function markMessagesRead(snapshot){
+snapshot.forEach(doc=>{
+const m=doc.data();
+if(m.senderUid!==currentUser.uid&&(!m.seenBy||!m.seenBy.includes(currentUser.uid))){
+doc.ref.update({seenBy:firebase.firestore.FieldValue.arrayUnion(currentUser.uid),status:'read'}).catch(()=>{});
+}
+});
+}
+function renderPinBar(){
+const wrap=document.getElementById('pinBarWrap');
+if(!wrap)return;
+const pinned=activeMessages.find(m=>m.pinned);
+if(!pinned){wrap.innerHTML='';return;}
+const preview=pinned.type==='text'?pinned.text:(pinned.type==='image'?'📷 Gambar':(pinned.type==='audio'?'🎤 Voice Note':'📊 Polling'));
+wrap.innerHTML=`<div class="pin-bar">📌 <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(preview)}</span><button class="mini-btn" id="btnUnpin">Lepas</button></div>`;
+document.getElementById('btnUnpin').addEventListener('click',()=>togglePin(pinned.id,true));
+}
+function renderMessage(msg,container){
+if(msg.type==='system'){
+const sd=document.createElement('div');
+sd.style.textAlign='center';sd.style.fontSize='11px';sd.style.color='var(--text-2)';sd.style.margin='4px 0';
+sd.textContent=msg.text;
+container.appendChild(sd);
+return;
+}
+const wrapDiv=document.createElement('div');
+const isSent=msg.senderUid===currentUser.uid;
+wrapDiv.className='message-wrap '+(isSent?'sent-wrap':'received-wrap');
+let senderTagEl=null;
+if(currentGroup&&!isSent){
+const member=currentGroup._memberMap&&currentGroup._memberMap[msg.senderUid];
+senderTagEl=document.createElement('div');
+senderTagEl.className='sender-tag';
+senderTagEl.textContent=member?member.name:'...';
+}
+const div=document.createElement('div');
+div.className='message '+(isSent?'sent':'received');
+div.dataset.mid=msg.id;
+let content='';
+if(msg.pinned)content+='<div class="pinned-flag">📌 Disematkan</div>';
+if(msg.replySnippet)content+=`<div class="quote">${escapeHtml(msg.replySnippet)}</div>`;
+if(msg.type==='text')content+=escapeHtml(msg.text);
+else if(msg.type==='image')content+=`<img src="${msg.data}" loading="lazy" onclick="window.open(this.src)">`;
+else if(msg.type==='audio')content+=`<audio src="${msg.data}" controls></audio>`;
+else if(msg.type==='poll')content+=renderPollHtml(msg);
+const time=msg.timestamp?new Date(msg.timestamp.toDate()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):'';
+let tick='';
+if(isSent&&!currentGroup){
+const seen=msg.seenBy&&msg.seenBy.includes(currentChatUser.uid);
+tick=`<span class="tick ${seen?'read':''}">${seen?'✓✓':'✓'}</span>`;
+}
+div.innerHTML=content+`<div class="message-time">${time}${tick}</div>`;
+div.addEventListener('click',()=>{
+if(msg.type==='poll')return;
+openMessageActionSheet(msg);
+});
+if(msg.type==='poll'){
+div.querySelectorAll('.poll-opt').forEach((opt,idx)=>opt.addEventListener('click',()=>votePoll(msg,idx)));
+}
+if(senderTagEl)wrapDiv.appendChild(senderTagEl);
+wrapDiv.appendChild(div);
+container.appendChild(wrapDiv);
+}
+function renderPollHtml(msg){
+const votes=msg.votes||{};
+const total=Object.keys(votes).length;
+const counts=msg.options.map((_,i)=>Object.values(votes).filter(v=>v===i).length);
+let html=`<div class="poll-box"><div class="poll-q">📊 ${escapeHtml(msg.question)}</div>`;
+msg.options.forEach((opt,i)=>{
+const pct=total>0?Math.round((counts[i]/total)*100):0;
+html+=`<div class="poll-opt"><div class="fillbar" style="width:${pct}%;"></div><span>${escapeHtml(opt)}</span><span>${counts[i]} (${pct}%)</span></div>`;
+});
+html+=`</div>`;
+return html;
+}
+async function votePoll(msg,optionIndex){
+const ref=chatContextRef().collection('messages').doc(msg.id);
+await ref.update({['votes.'+currentUser.uid]:optionIndex});
+}
+function openCreatePollModal(){
+openModal(`
+<h3>Buat Polling</h3>
+<input type="text" id="pollQ" placeholder="Pertanyaan polling">
+<input type="text" id="pollO1" placeholder="Opsi 1">
+<input type="text" id="pollO2" placeholder="Opsi 2">
+<input type="text" id="pollO3" placeholder="Opsi 3 (opsional)">
+<input type="text" id="pollO4" placeholder="Opsi 4 (opsional)">
+<button class="btn-primary" id="btnSendPoll">Kirim Polling</button>
+<button class="btn-secondary" id="btnCancelPoll">Batal</button>`);
+document.getElementById('btnCancelPoll').addEventListener('click',closeModal);
+document.getElementById('btnSendPoll').addEventListener('click',async()=>{
+const q=document.getElementById('pollQ').value.trim();
+const opts=[document.getElementById('pollO1').value.trim(),document.getElementById('pollO2').value.trim(),document.getElementById('pollO3').value.trim(),document.getElementById('pollO4').value.trim()].filter(Boolean);
+if(!q||opts.length<2){showToast('Isi pertanyaan dan minimal 2 opsi');return;}
+const ref=chatContextRef();
+await ref.collection('messages').add({type:'poll',question:q,options:opts,votes:{},senderUid:currentUser.uid,timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+await ref.set({lastMessage:'📊 Polling: '+q,lastSender:currentUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+closeModal();
+});
+}
+function openMessageActionSheet(msg){
+const isMine=msg.senderUid===currentUser.uid;
+const canModerate=isMine||(currentGroup&&(currentGroup.admins||[]).includes(currentUser.uid))||currentUser.isAdmin;
+let buttons=`<button id="actReply">↩ Balas</button>`;
+if(canModerate)buttons+=`<button id="actPin">📌 ${msg.pinned?'Lepas Sematan':'Sematkan'}</button>`;
+if(isMine)buttons+=`<button id="actDeleteAll" class="danger">🗑 Hapus untuk Semua</button>`;
+buttons+=`<button id="actDeleteMe" class="danger">🗑 Hapus untuk Saya</button>`;
+buttons+=`<button id="actCancelSheet">Tutup</button>`;
+openModal(`<div class="action-sheet">${buttons}</div>`);
+document.getElementById('actReply').addEventListener('click',()=>{closeModal();setReplyTarget(msg);});
+if(canModerate)document.getElementById('actPin').addEventListener('click',()=>{closeModal();togglePin(msg.id,msg.pinned);});
+if(isMine)document.getElementById('actDeleteAll').addEventListener('click',()=>{closeModal();deleteMessageForAll(msg.id);});
+document.getElementById('actDeleteMe').addEventListener('click',()=>{closeModal();deleteMessageForMe(msg.id);});
+document.getElementById('actCancelSheet').addEventListener('click',closeModal);
+}
+function setReplyTarget(msg){
+replyTarget=msg;
+const wrap=document.getElementById('replyBarWrap');
+if(!wrap)return;
+const preview=msg.type==='text'?msg.text:(msg.type==='image'?'📷 Gambar':(msg.type==='audio'?'🎤 Voice Note':'📊 Polling'));
+wrap.innerHTML=`<div class="reply-bar"><span class="rtxt">${escapeHtml(preview)}</span><button class="mini-btn" id="btnCancelReply">✕</button></div>`;
+document.getElementById('btnCancelReply').addEventListener('click',()=>{replyTarget=null;wrap.innerHTML='';});
+}
+async function togglePin(msgId,wasPinned){
+const ref=chatContextRef().collection('messages');
+const snap=await ref.where('pinned','==',true).get();
+const batch=db.batch();
+snap.forEach(d=>batch.update(d.ref,{pinned:false}));
+if(!wasPinned)batch.update(ref.doc(msgId),{pinned:true});
+await batch.commit();
+}
+async function deleteMessageForAll(msgId){
+await chatContextRef().collection('messages').doc(msgId).update({type:'system',text:'Pesan telah dihapus',deletedGlobally:true});
+}
+async function deleteMessageForMe(msgId){
+await chatContextRef().collection('messages').doc(msgId).update({deletedFor:firebase.firestore.FieldValue.arrayUnion(currentUser.uid)});
+}
+async function sendTextMessage(){
+const input=document.getElementById('messageInput');
+const text=input.value.trim();
+if(!text)return;
+if(currentGroup){
+if(currentGroup.onlyAdminSend&&!(currentGroup.admins||[]).includes(currentUser.uid)&&!currentUser.isAdmin){showToast('Hanya admin grup yang dapat mengirim pesan');return;}
+}else{
+if((currentChatUser.blockedUsers||[]).includes(currentUser.uid)){showToast('Anda diblokir oleh pengguna ini');return;}
+}
+const ref=chatContextRef();
+const payload={type:'text',text:text,senderUid:currentUser.uid,status:'sent',seenBy:[],timestamp:firebase.firestore.FieldValue.serverTimestamp()};
+if(replyTarget){
+const preview=replyTarget.type==='text'?replyTarget.text:(replyTarget.type==='image'?'📷 Gambar':(replyTarget.type==='audio'?'🎤 Voice Note':'📊 Polling'));
+payload.replySnippet=preview;
+}
+if(!currentGroup&&currentUser.disappearTimer)payload.expireAt=Date.now()+currentUser.disappearTimer*1000;
+await ref.collection('messages').add(payload);
+const metaUpdate={lastMessage:text,lastSender:currentUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+if(!currentGroup)metaUpdate.participants=[currentUser.uid,currentChatUser.uid];
+await ref.set(metaUpdate,{merge:true});
+input.value='';
+replyTarget=null;
+const rb=document.getElementById('replyBarWrap');
+if(rb)rb.innerHTML='';
+updateStreak(currentGroup?currentGroup.id:null);
+}
+async function handleImageUpload(e){
+const file=e.target.files[0];
+if(!file)return;
+if(!file.type.startsWith('image/')){showToast('Hanya file gambar yang didukung');return;}
+showToast('Mengirim gambar...');
+try{
+const base64=await compressImage(file,900,0.65);
+if(base64.length>900000){showToast('Gambar terlalu besar');e.target.value='';return;}
+const ref=chatContextRef();
+await ref.collection('messages').add({type:'image',data:base64,senderUid:currentUser.uid,status:'sent',seenBy:[],timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+const metaUpdate={lastMessage:'📷 Gambar',lastSender:currentUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+if(!currentGroup)metaUpdate.participants=[currentUser.uid,currentChatUser.uid];
+await ref.set(metaUpdate,{merge:true});
+updateStreak(currentGroup?currentGroup.id:null);
+}catch(err){showToast('Gagal mengirim gambar');}
+e.target.value='';
+}
+async function toggleRecording(){
+const btn=document.getElementById('btnRecord');
+if(!isRecording){
+try{
+const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+mediaRecorder=new MediaRecorder(stream);
+audioChunks=[];
+mediaRecorder.ondataavailable=(e)=>audioChunks.push(e.data);
+mediaRecorder.onstop=async()=>{
+const blob=new Blob(audioChunks,{type:'audio/webm'});
+await uploadVoiceNote(blob);
+stream.getTracks().forEach(t=>t.stop());
+};
+mediaRecorder.start();
+isRecording=true;btn.classList.add('recording');btn.textContent='⏹';
+}catch{showToast('Mikrofon tidak tersedia');}
+}else{
+mediaRecorder.stop();isRecording=false;btn.classList.remove('recording');btn.textContent='🎤';
+}
+}
+async function uploadVoiceNote(blob){
+if(blob.size>900000){showToast('Voice note terlalu panjang');return;}
+showToast('Mengirim voice note...');
+try{
+const base64=await blobToBase64(blob);
+const ref=chatContextRef();
+await ref.collection('messages').add({type:'audio',data:base64,senderUid:currentUser.uid,status:'sent',seenBy:[],timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+const metaUpdate={lastMessage:'🎤 Voice Note',lastSender:currentUser.uid,updatedAt:firebase.firestore.FieldValue.serverTimestamp()};
+if(!currentGroup)metaUpdate.participants=[currentUser.uid,currentChatUser.uid];
+await ref.set(metaUpdate,{merge:true});
+updateStreak(currentGroup?currentGroup.id:null);
+}catch{showToast('Gagal mengirim voice note');}
+}
+async function updateStreak(groupId){
+const today=new Date().toDateString();
+if(groupId){
+const gref=db.collection('groups').doc(groupId);
+const gsnap=await gref.get();
+const gdata=gsnap.data();
+if(gdata.lastStreakDate!==today){
+const yesterday=new Date(Date.now()-86400000).toDateString();
+const newStreak=gdata.lastStreakDate===yesterday?(gdata.streak||0)+1:1;
+await gref.update({streak:newStreak,lastStreakDate:today});
+}
+return;
+}
+const ref=db.collection('users').doc(currentUser.uid);
+const snap=await ref.get();
+const data=snap.data();
+if(data.lastStreakDate!==today){
+const yesterday=new Date(Date.now()-86400000).toDateString();
+const newStreak=data.lastStreakDate===yesterday?(data.streak||0)+1:1;
+await ref.update({streak:newStreak,lastStreakDate:today});
+currentUser.streak=newStreak;
+currentUser.lastStreakDate=today;
+}
+}
+
+/* ===================== GROUP CHAT ===================== */
+async function openGroup(gid){
+const snap=await db.collection('groups').doc(gid).get();
+if(!snap.exists)return;
+const data=snap.data();
+const memberDocs=await Promise.all(data.members.map(m=>db.collection('users').doc(m).get()));
+const memberMap={};
+memberDocs.forEach(d=>{if(d.exists)memberMap[d.id]={uid:d.id,...d.data()};});
+currentGroup={id:gid,...data,_memberMap:memberMap};
+currentChatUser=null;
+replyTarget=null;
+renderGroupScreen();
+}
+function renderGroupScreen(){
+const app=document.getElementById('app');
+const isGroupAdmin=(currentGroup.admins||[]).includes(currentUser.uid)||currentUser.isAdmin;
+app.innerHTML=`
+<div class="screen active" id="groupScreen">
+<div class="header">
+<button class="back-btn" id="btnBackGroup">&larr;</button>
+${avatarHtml(currentGroup)}
+<div style="flex:1;margin-left:8px;min-width:0;">
+<div style="font-weight:700;font-size:13.5px;">${currentGroup.name}</div>
+<div style="font-size:10px;color:var(--text-2);">${currentGroup.members.length} anggota • 🔥 ${currentGroup.streak||0} hari</div>
+</div>
+<button class="btn-icon" id="btnGroupInfo">Info</button>
+</div>
+<div id="pinBarWrap"></div>
+<div class="content" id="messagesContainer"></div>
+<div id="replyBarWrap"></div>
+<div class="input-area">
+<button class="btn-attach" id="btnAttach">📎</button>
+<input type="file" id="fileInput" accept="image/*">
+<input type="text" id="messageInput" placeholder="${currentGroup.onlyAdminSend&&!isGroupAdmin?'Hanya admin dapat mengirim pesan':'Tulis pesan...'}" ${currentGroup.onlyAdminSend&&!isGroupAdmin?'disabled':''}>
+<button class="btn-record" id="btnRecord" ${currentGroup.onlyAdminSend&&!isGroupAdmin?'disabled':''}>🎤</button>
+<button class="btn-send-round" id="btnSend" ${currentGroup.onlyAdminSend&&!isGroupAdmin?'disabled':''}>➤</button>
+</div>
+</div>`;
+document.getElementById('btnBackGroup').addEventListener('click',()=>{currentGroup=null;renderApp();});
+document.getElementById('btnAttach').addEventListener('click',openAttachMenu);
+document.getElementById('fileInput').addEventListener('change',handleImageUpload);
+document.getElementById('btnSend').addEventListener('click',sendTextMessage);
+document.getElementById('messageInput').addEventListener('keydown',(e)=>{if(e.key==='Enter')sendTextMessage();});
+document.getElementById('btnRecord').addEventListener('click',toggleRecording);
+document.getElementById('btnGroupInfo').addEventListener('click',renderGroupInfoModal);
+listenToMessages();
+}
+function renderGroupInfoModal(){
+const isOwner=currentGroup.owner===currentUser.uid;
+const isGroupAdmin=(currentGroup.admins||[]).includes(currentUser.uid)||currentUser.isAdmin;
+let memberHtml='';
+currentGroup.members.forEach(uid=>{
+const m=currentGroup._memberMap[uid];
+if(!m)return;
+const isMAdmin=(currentGroup.admins||[]).includes(uid);
+memberHtml+=`<div class="member-row">${avatarHtml(m)}<div class="meta">${m.name}${isMAdmin?'<span class="badge-admin">ADMIN</span>':''}${uid===currentGroup.owner?'<span class="badge-group">OWNER</span>':''}</div>
+${isGroupAdmin&&uid!==currentGroup.owner&&uid!==currentUser.uid?`<div class="admin-actions">
+<button class="mini-btn gold" data-act="toggleadmin" data-uid="${uid}">${isMAdmin?'Cabut Admin':'Jadikan Admin'}</button>
+<button class="mini-btn danger" data-act="kick" data-uid="${uid}">Kick</button>
+</div>`:''}
+</div>`;
+});
+openModal(`
+<h3>Info Grup</h3>
+${avatarHtml(currentGroup,'lg')}
+<p style="font-size:12px;color:var(--text-2);text-align:center;">🔥 Streak grup: ${currentGroup.streak||0} hari</p>
+${isGroupAdmin?`<div class="settings-list-item" id="optGroupOnlyAdmin"><div class="icon-circle">🔒</div><div><b>${currentGroup.onlyAdminSend?'Matikan':'Aktifkan'} Mode Hanya Admin Kirim</b></div></div>
+<div class="settings-list-item" id="optGroupAddMember"><div class="icon-circle">➕</div><div><b>Tambah Anggota</b></div></div>
+<div class="settings-list-item" id="optGroupRename"><div class="icon-circle">✎</div><div><b>Ubah Nama Grup</b></div></div>`:''}
+<div class="settings-list-item" id="optGroupLeave"><div class="icon-circle">🚪</div><div><b>Keluar Grup</b></div></div>
+${isOwner?'<div class="settings-list-item" id="optGroupDelete"><div class="icon-circle">🗑</div><div><b style="color:#fca5a5;">Hapus Grup</b></div></div>':''}
+<hr class="sep">
+<p style="font-size:11.5px;color:var(--text-2);">Anggota:</p>
+<div style="max-height:200px;overflow-y:auto;">${memberHtml}</div>
+<button class="btn-secondary" id="btnCloseGroupInfo">Tutup</button>`);
+document.getElementById('btnCloseGroupInfo').addEventListener('click',closeModal);
+if(isGroupAdmin){
+document.getElementById('optGroupOnlyAdmin').addEventListener('click',async()=>{
+await db.collection('groups').doc(currentGroup.id).update({onlyAdminSend:!currentGroup.onlyAdminSend});
+currentGroup.onlyAdminSend=!currentGroup.onlyAdminSend;
+closeModal();renderGroupScreen();
+});
+document.getElementById('optGroupAddMember').addEventListener('click',openAddMemberModal);
+document.getElementById('optGroupRename').addEventListener('click',()=>{
+openModal(`<h3>Ubah Nama Grup</h3><input type="text" id="newGroupName" value="${currentGroup.name}"><button class="btn-primary" id="btnSaveGroupName">Simpan</button><button class="btn-secondary" id="btnCancelGroupName">Batal</button>`);
+document.getElementById('btnCancelGroupName').addEventListener('click',closeModal);
+document.getElementById('btnSaveGroupName').addEventListener('click',async()=>{
+const newName=document.getElementById('newGroupName').value.trim();
+if(!newName)return;
+await db.collection('groups').doc(currentGroup.id).update({name:newName});
+currentGroup.name=newName;
+closeModal();renderGroupScreen();
+});
+});
+}
+document.querySelectorAll('[data-act="toggleadmin"]').forEach(btn=>{
+btn.addEventListener('click',async()=>{
+const uid=btn.dataset.uid;
+const isMAdmin=(currentGroup.admins||[]).includes(uid);
+const ref=db.collection('groups').doc(currentGroup.id);
+if(isMAdmin)await ref.update({admins:firebase.firestore.FieldValue.arrayRemove(uid)});
+else await ref.update({admins:firebase.firestore.FieldValue.arrayUnion(uid)});
+closeModal();
+openGroup(currentGroup.id);
+});
+});
+document.querySelectorAll('[data-act="kick"]').forEach(btn=>{
+btn.addEventListener('click',async()=>{
+const uid=btn.dataset.uid;
+const ref=db.collection('groups').doc(currentGroup.id);
+await ref.update({members:firebase.firestore.FieldValue.arrayRemove(uid),admins:firebase.firestore.FieldValue.arrayRemove(uid)});
+await ref.collection('messages').add({type:'system',text:(currentGroup._memberMap[uid]?currentGroup._memberMap[uid].name:'Anggota')+' dikeluarkan dari grup',timestamp:firebase.firestore.FieldValue.serverTimestamp()});
+showToast('Anggota dikeluarkan');
+closeModal();
+openGroup(currentGroup.id);
+});
+});
+document.getElementById('optGroupLeave').addEventListener('click',async()=>{
+if(!confirm('Keluar dari grup ini?'))return;
+const ref=db.collection('groups').doc(currentGroup.id);
+await ref.update({members:firebase.firestore.FieldValue.arrayRemove(currentUser.uid),admins:firebase.firestore.FieldValue.arrayRemove(currentUser.uid)});
+closeModal();
+currentGroup=null;
+renderApp();
+});
+const delBtn=document.getElementById('optGroupDelete');
+if(delBtn)delBtn.addEventListener('click',async()=>{
+if(!confirm('Hapus grup ini secara permanen?'))return;
+await db.collection('groups').doc(currentGroup.id).delete();
+closeModal();
+currentGroup=null;
+renderApp();
+showToast('Grup berhasil dihapus');
+});
+}
+async function openAddMemberModal(){
+const snap=await db.collection('users').doc(currentUser.uid).get();
+const data=snap.data();
+const candidateUids=Array.from(new Set([...(data.following||[]),...(data.followers||[])])).filter(u=>!currentGroup.members.includes(u));
+const docs=await Promise.all(candidateUids.map(u=>db.collection('users').doc(u).get()));
+let html='';
+docs.forEach(d=>{
+if(!d.exists)return;
+const u=d.data();
+html+=`<label class="member-row"><input type="checkbox" class="addMCheck" value="${d.id}"> ${avatarHtml(u)} <span class="meta">${u.name}</span></label>`;
+});
+openModal(`<h3>Tambah Anggota</h3><div style="max-height:240px;overflow-y:auto;">${html||'<p style="font-size:12px;color:var(--text-2);">Tidak ada kandidat tersedia</p>'}</div><button class="btn-primary" id="btnAddMembers">Tambah</button><button class="btn-secondary" id="btnCancelAddM">Batal</button>`);
+document.getElementById('btnCancelAddM').addEventListener('click',closeModal);
+document.getElementById('btnAddMembers').addEventListener('click',async()=>{
+const selected=Array.from(document.querySelectorAll('.addMCheck:checked')).map(c=>c.value);
+if(selected.length===0){closeModal();return;}
+await db.collection('groups').doc(currentGroup.id).update({members:firebase.firestore.FieldValue.arrayUnion(...selected)});
+closeModal();
+showToast('Anggota berhasil ditambahkan');
+openGroup(currentGroup.id);
+});
+}
+
+/* ===================== ADMIN PANEL ===================== */
+function renderAdminPanel(){
+const app=document.getElementById('app');
+app.innerHTML=`
+<div class="screen active" id="adminScreen">
+<div class="header">
+<button class="back-btn" id="btnBackAdmin">&larr;</button>
+<div class="brand">${LOGO(24)}<span class="brand-word">👑 ADMIN</span></div>
+<div></div>
+</div>
+<div class="search-bar"><input type="text" id="adminSearchInput" placeholder="Cari ID atau username..."></div>
+<div class="content" id="adminContent"></div>
+</div>`;
+document.getElementById('btnBackAdmin').addEventListener('click',()=>renderApp());
+document.getElementById('adminSearchInput').addEventListener('input',(e)=>loadAdminUsers(e.target.value.trim()));
+loadAdminUsers('');
+}
+async function loadAdminUsers(query){
+const content=document.getElementById('adminContent');
+content.innerHTML=`<div style="display:flex;justify-content:center;padding:28px;"><div class="spinner"></div></div>`;
+try{
+if(query){
+const byId=await db.collection('users').where('id','==',query).limit(10).get();
+const byName=await db.collection('users').where('name','>=',query).where('name','<=',query+'\uf8ff').limit(20).get();
+const map=new Map();
+byId.forEach(d=>map.set(d.id,{_docId:d.id,...d.data()}));
+byName.forEach(d=>map.set(d.id,{_docId:d.id,...d.data()}));
+renderAdminList(Array.from(map.values()));
+return;
+}
+const snap=await db.collection('users').orderBy('createdAt','desc').limit(50).get();
+const list=[];
+snap.forEach(doc=>list.push({_docId:doc.id,...doc.data()}));
+renderAdminList(list);
+}catch(err){
+console.error(err);
+content.innerHTML=`<div class="empty-state"><b>Gagal memuat data</b></div>`;
+}
+}
+function renderAdminList(list){
+const content=document.getElementById('adminContent');
+if(list.length===0){content.innerHTML=`<div class="empty-state"><b>Tidak ada pengguna</b></div>`;return;}
+let html='';
+list.forEach(u=>{
+html+=`<div class="admin-row" data-uid="${u._docId}">
+${avatarHtml(u)}
+<div class="meta"><div class="nm">${u.name}${u.isAdminAccount?'<span class="badge-admin">ADMIN</span>':''}${u.accountBlocked?'<span class="badge-blocked">Blokir</span>':''}</div>
+<div class="sub">ID: ${u.id} • 🔥${u.streak||0} • Pengikut:${(u.followers||[]).length} • Mengikuti:${(u.following||[]).length}</div></div>
+<div class="admin-actions">
+<button class="mini-btn" data-action="edit">Edit</button>
+${!u.isAdminAccount?`<button class="mini-btn ${u.accountBlocked?'ok':'danger'}" data-action="toggleblock">${u.accountBlocked?'Unblock':'Block'}</button>`:''}
+</div></div>`;
+});
+content.innerHTML=html;
+content.querySelectorAll('.admin-row').forEach(row=>{
+const docId=row.dataset.uid;
+const user=list.find(u=>u._docId===docId);
+row.querySelector('[data-action="edit"]').addEventListener('click',()=>openAdminEditUserModal(user));
+const blockBtn=row.querySelector('[data-action="toggleblock"]');
+if(blockBtn)blockBtn.addEventListener('click',async()=>{
+await db.collection('users').doc(docId).update({accountBlocked:!user.accountBlocked});
+showToast(user.accountBlocked?'Pengguna di-unblock':'Pengguna diblokir');
+loadAdminUsers(document.getElementById('adminSearchInput').value.trim());
+});
+});
+}
+function openAdminEditUserModal(user){
+openModal(`
+<h3>Kontrol Penuh: ${user.name}</h3>
+<input type="text" id="adEditId" placeholder="ID" value="${user.id}">
+<input type="text" id="adEditName" placeholder="Username" value="${user.name}">
+<textarea id="adEditBio" rows="2" placeholder="Bio">${user.bio||''}</textarea>
+<input type="number" id="adEditStreak" placeholder="Streak (hari)" value="${user.streak||0}">
+<input type="number" id="adEditFollowers" placeholder="Jumlah Pengikut (manual)" value="${(user.followers||[]).length}">
+<input type="number" id="adEditFollowing" placeholder="Jumlah Mengikuti (manual)" value="${(user.following||[]).length}">
+<input type="password" id="adEditPassword" placeholder="Ganti Password (kosongkan jika tidak)">
+<button class="btn-primary" id="btnAdSave">SIMPAN SEMUA</button>
+${!user.isAdminAccount?'<button class="btn-danger" id="btnAdDelete">Hapus Akun Permanen</button>':''}
+<button class="btn-secondary" id="btnAdCancel">Tutup</button>`);
+document.getElementById('btnAdCancel').addEventListener('click',closeModal);
+document.getElementById('btnAdSave').addEventListener('click',async()=>{
+const newId=document.getElementById('adEditId').value.trim();
+const newName=document.getElementById('adEditName').value.trim();
+const newBio=document.getElementById('adEditBio').value.trim();
+const newStreak=parseInt(document.getElementById('adEditStreak').value)||0;
+const newFollowersCount=parseInt(document.getElementById('adEditFollowers').value)||0;
+const newFollowingCount=parseInt(document.getElementById('adEditFollowing').value)||0;
+const newPassword=document.getElementById('adEditPassword').value;
+const update={id:newId,name:newName,bio:newBio,streak:newStreak};
+const currentFollowers=user.followers||[];
+const currentFollowing=user.following||[];
+if(newFollowersCount!==currentFollowers.length){
+const fake=[];for(let i=0;i<newFollowersCount;i++)fake.push('admin_set_'+i);
+update.followers=fake;
+}
+if(newFollowingCount!==currentFollowing.length){
+const fake=[];for(let i=0;i<newFollowingCount;i++)fake.push('admin_set_'+i);
+update.following=fake;
+}
+if(newPassword)update.password=await hashPassword(newPassword);
+await db.collection('users').doc(user._docId).update(update);
+closeModal();
+showToast('Data pengguna berhasil diperbarui');
+loadAdminUsers(document.getElementById('adminSearchInput').value.trim());
+});
+const delBtn=document.getElementById('btnAdDelete');
+if(delBtn)delBtn.addEventListener('click',async()=>{
+if(!confirm('Hapus akun ini secara permanen?'))return;
+await db.collection('users').doc(user._docId).delete();
+closeModal();
+showToast('Akun berhasil dihapus');
+loadAdminUsers('');
+});
+}
+
+/* ===================== ONLINE / BOOTSTRAP ===================== */
+function updateOnlineStatus(online){
+if(!currentUser)return;
+db.collection('users').doc(currentUser.uid).update({online:online,lastActive:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+}
+window.addEventListener('beforeunload',()=>updateOnlineStatus(false));
+
+async function bootstrap(){
+const app=document.getElementById('app');
+app.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:14px;">${LOGO(50)}<div class="spinner"></div></div>`;
+try{
+await ensureAuthReady();
+await ensureAdminAccountExists();
+}catch(err){
+console.error(err);
+}
+const savedUser=localStorage.getItem('skytalk_user');
+if(savedUser){
+try{
+const parsed=JSON.parse(savedUser);
+const doc=await db.collection('users').doc(parsed.uid).get();
+if(doc.exists){
+const data=doc.data();
+const hashed=await hashPassword(parsed.password);
+if(data.password===hashed&&!data.accountBlocked){
+if(auth.currentUser){
+await doc.ref.update({authUid:auth.currentUser.uid});
+}
+currentUser={...data,uid:doc.id,authUid:auth.currentUser?auth.currentUser.uid:data.authUid,_rawPassword:parsed.password,isAdmin:!!data.isAdminAccount};
+renderApp();
+updateOnlineStatus(true);
+return;
+}
+}
+}catch(err){console.error(err);}
+localStorage.removeItem('skytalk_user');
+}
+renderApp();
+}
+window.addEventListener('load',bootstrap);
+document.addEventListener('visibilitychange',()=>{
+if(currentUser)updateOnlineStatus(!document.hidden);
+});
+</script>
+</body>
+</html>
